@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Contador de Pessoas</title>
+  <title>SISTEMA DE CAPTAÇÃO E CONTABILIZAÇÃO DE PESSOAS</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -21,23 +21,44 @@
       font-size: 24px;
       margin: 20px 0;
     }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 5px;
+    }
   </style>
 </head>
 <body>
-  <h1>Contador de Pessoas</h1>
+  <h1>SISTEMA DE CAPTAÇÃO E CONTABILIZAÇÃO DE PESSOAS</h1>
+  
   <video id="video" autoplay playsinline muted></video>
+  
   <div id="count">Pessoas detectadas: 0</div>
+  
+  <!-- Botões para trocar câmera e baixar PDF -->
+  <button id="switchCamera">Trocar Câmera</button>
+  <button id="downloadPdf">Baixar PDF</button>
 
   <script>
-    // Selecionar o elemento de vídeo e o contador
+    // Selecionar elementos
     const video = document.getElementById('video');
     const countDisplay = document.getElementById('count');
+    const switchCameraBtn = document.getElementById('switchCamera');
+    const downloadPdfBtn = document.getElementById('downloadPdf');
+    
+    let currentFacingMode = 'environment'; // Começa com a câmera traseira
     let totalPeopleDetected = 0;
+    let stream; // Para armazenar o stream da câmera
 
-    // Função para acessar a câmera traseira
+    // Função para acessar a câmera
     async function setupCamera() {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { exact: 'environment' } } // Câmera traseira
+      if (stream) {
+        // Se já houver uma stream ativa, parar todas as tracks
+        stream.getTracks().forEach(track => track.stop());
+      }
+      
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: currentFacingMode } }
       });
       video.srcObject = stream;
       return new Promise((resolve) => {
@@ -69,21 +90,26 @@
             personCount++;
           }
         });
-        
+
         // Atualizar a contagem na interface
         totalPeopleDetected += personCount;
         countDisplay.textContent = `Pessoas detectadas: ${totalPeopleDetected}`;
-
-        // Gerar PDF a cada 2 detecções
-        if (totalPeopleDetected >= 5) {
-          generatePDF(totalPeopleDetected);
-          totalPeopleDetected = 0; // Reiniciar a contagem após gerar o PDF
-        }
 
         requestAnimationFrame(detect);
       };
       detect();
     }
+
+    // Função para alternar entre câmera frontal e traseira
+    switchCameraBtn.addEventListener('click', () => {
+      currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+      setupCamera();
+    });
+
+    // Botão para gerar PDF manualmente
+    downloadPdfBtn.addEventListener('click', () => {
+      generatePDF(totalPeopleDetected);
+    });
 
     // Inicializar o vídeo e o modelo
     setupCamera().then(() => {
