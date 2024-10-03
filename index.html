@@ -80,28 +80,27 @@
     // Função principal de detecção de pessoas
     async function detectPeople() {
       const model = await cocoSsd.load();
-      console.log('Modelo COCO-SSD carregado!');
+      console.log('Modelo carregado!');
 
       const detect = async () => {
         const predictions = await model.detect(video);
+        
+        // Verificando as previsões no console
+        console.log('Predictions: ', predictions);
+
         let personCount = 0;
-
-        // Exibir previsões no console para depuração
-        console.log('Previsões:', predictions);
-
+        
         predictions.forEach((prediction) => {
           if (prediction.class === 'person') {
             personCount++;
           }
         });
 
-        // Atualizar a contagem se houver detecção
+        // Atualizar a contagem na interface se houver detecções
         if (personCount > 0) {
           totalPeopleDetected += personCount;
+          console.log('Pessoas detectadas nesta detecção: ', personCount);
           countDisplay.textContent = `Pessoas detectadas: ${totalPeopleDetected}`;
-          console.log(`Pessoas detectadas nesta rodada: ${personCount}`);
-        } else {
-          console.log('Nenhuma pessoa detectada nesta rodada.');
         }
 
         requestAnimationFrame(detect);
