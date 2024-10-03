@@ -75,7 +75,7 @@
         countDisplay.textContent = `Pessoas detectadas: ${totalPeopleDetected}`;
 
         // Gerar PDF a cada 2 detecções
-        if (totalPeopleDetected >= 2) {
+        if (totalPeopleDetected >= 5) {
           generatePDF(totalPeopleDetected);
           totalPeopleDetected = 0; // Reiniciar a contagem após gerar o PDF
         }
