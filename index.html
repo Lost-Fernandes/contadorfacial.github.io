@@ -84,9 +84,6 @@
 
       const detect = async () => {
         const predictions = await model.detect(video);
-        
-        // Verificando as previsões no console
-        console.log('Predictions: ', predictions);
 
         let personCount = 0;
         
@@ -96,12 +93,15 @@
           }
         });
 
-        // Atualizar a contagem na interface se houver detecções
+        // Atualizar a contagem na interface
         if (personCount > 0) {
           totalPeopleDetected += personCount;
           console.log('Pessoas detectadas nesta detecção: ', personCount);
           countDisplay.textContent = `Pessoas detectadas: ${totalPeopleDetected}`;
         }
+
+        // Atualizar a contagem mesmo que seja 0 para refletir o total sempre
+        countDisplay.textContent = `Pessoas detectadas: ${totalPeopleDetected}`;
 
         requestAnimationFrame(detect);
       };
