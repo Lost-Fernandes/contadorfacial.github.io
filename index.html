@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contador de Pessoas</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+    video {
+      width: 100%;
+      max-width: 600px;
+      border: 1px solid #ccc;
+    }
+    #count {
+      font-size: 24px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Contador de Pessoas</h1>
+  <video id="video" autoplay playsinline muted></video>
+  <div id="count">Pessoas detectadas: 0</div>
+
+  <script>
+    // Selecionar o elemento de vídeo e o contador
+    const video = document.getElementById('video');
+    const countDisplay = document.getElementById('count');
+
+    // Função para acessar a câmera
+    async function setupCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user' }
+      });
+      video.srcObject = stream;
+      return new Promise((resolve) => {
+        video.onloadedmetadata = () => {
+          resolve(video);
+        };
+      });
+    }
+
+    // Função principal de detecção de pessoas
+    async function detectPeople() {
+      const model = await cocoSsd.load();
+      console.log('Modelo carregado!');
+
+      const detect = async () => {
+        const predictions = await model.detect(video);
+        let personCount = 0;
+        predictions.forEach((prediction) => {
+          if (prediction.class === 'person') {
+            personCount++;
+          }
+        });
+        // Atualizar o contador na interface
+        countDisplay.textContent = `Pessoas detectadas: ${personCount}`;
+        requestAnimationFrame(detect);
+      };
+      detect();
+    }
+
+    // Inicializar o vídeo e o modelo
+    setupCamera().then(() => {
+      detectPeople();
+    });
+  </script>
+</body>
+</html>
