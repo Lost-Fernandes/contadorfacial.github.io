@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SISTEMA DE CAPTAÇÃO E CONTABILIZAÇÃO DE PESSOAS</title>
+  <title>Contador de Pessoas</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -29,7 +29,7 @@
   </style>
 </head>
 <body>
-  <h1>SISTEMA DE CAPTAÇÃO E CONTABILIZAÇÃO DE PESSOAS</h1>
+  <h1>Contador de Pessoas</h1>
   
   <video id="video" autoplay playsinline muted></video>
   
@@ -85,15 +85,19 @@
       const detect = async () => {
         const predictions = await model.detect(video);
         let personCount = 0;
+        
+        // Corrigindo a contagem - agora só conta se houver previsão de 'person'
         predictions.forEach((prediction) => {
           if (prediction.class === 'person') {
             personCount++;
           }
         });
 
-        // Atualizar a contagem na interface
-        totalPeopleDetected += personCount;
-        countDisplay.textContent = `Pessoas detectadas: ${totalPeopleDetected}`;
+        // Atualizar a contagem na interface se houve detecção
+        if (personCount > 0) {
+          totalPeopleDetected += personCount;
+          countDisplay.textContent = `Pessoas detectadas: ${totalPeopleDetected}`;
+        }
 
         requestAnimationFrame(detect);
       };
@@ -118,4 +122,3 @@
   </script>
 </body>
 </html>
-
