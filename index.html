@@ -21,44 +21,23 @@
       font-size: 24px;
       margin: 20px 0;
     }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      margin: 5px;
-    }
   </style>
 </head>
 <body>
   <h1>Contador de Pessoas</h1>
-  
   <video id="video" autoplay playsinline muted></video>
-  
   <div id="count">Pessoas detectadas: 0</div>
-  
-  <!-- Botões para trocar câmera e baixar PDF -->
-  <button id="switchCamera">Trocar Câmera</button>
-  <button id="downloadPdf">Baixar PDF</button>
 
   <script>
-    // Selecionar elementos
+    // Selecionar o elemento de vídeo e o contador
     const video = document.getElementById('video');
     const countDisplay = document.getElementById('count');
-    const switchCameraBtn = document.getElementById('switchCamera');
-    const downloadPdfBtn = document.getElementById('downloadPdf');
-    
-    let currentFacingMode = 'environment'; // Começa com a câmera traseira
     let totalPeopleDetected = 0;
-    let stream; // Para armazenar o stream da câmera
 
-    // Função para acessar a câmera
+    // Função para acessar a câmera traseira
     async function setupCamera() {
-      if (stream) {
-        // Se já houver uma stream ativa, parar todas as tracks
-        stream.getTracks().forEach(track => track.stop());
-      }
-      
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { exact: currentFacingMode } }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: 'environment' } } // Câmera traseira
       });
       video.srcObject = stream;
       return new Promise((resolve) => {
@@ -84,40 +63,27 @@
 
       const detect = async () => {
         const predictions = await model.detect(video);
-
         let personCount = 0;
-        
         predictions.forEach((prediction) => {
           if (prediction.class === 'person') {
             personCount++;
           }
         });
-
+        
         // Atualizar a contagem na interface
-        if (personCount > 0) {
-          totalPeopleDetected += personCount;
-          console.log('Pessoas detectadas nesta detecção: ', personCount);
-          countDisplay.textContent = `Pessoas detectadas: ${totalPeopleDetected}`;
-        }
-
-        // Atualizar a contagem mesmo que seja 0 para refletir o total sempre
+        totalPeopleDetected += personCount;
         countDisplay.textContent = `Pessoas detectadas: ${totalPeopleDetected}`;
+
+        // Gerar PDF a cada 2 detecções
+        if (totalPeopleDetected >= 2) {
+          generatePDF(totalPeopleDetected);
+          totalPeopleDetected = 0; // Reiniciar a contagem após gerar o PDF
+        }
 
         requestAnimationFrame(detect);
       };
       detect();
     }
-
-    // Função para alternar entre câmera frontal e traseira
-    switchCameraBtn.addEventListener('click', () => {
-      currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
-      setupCamera();
-    });
-
-    // Botão para gerar PDF manualmente
-    downloadPdfBtn.addEventListener('click', () => {
-      generatePDF(totalPeopleDetected);
-    });
 
     // Inicializar o vídeo e o modelo
     setupCamera().then(() => {
