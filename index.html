@@ -20,23 +20,32 @@
       font-size: 24px;
       margin: 20px 0;
     }
+    .log {
+      font-size: 18px;
+      color: green;
+      margin: 10px 0;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
   <h1>Contador de Pessoas</h1>
   <video id="video" autoplay playsinline muted></video>
   <div id="count">Pessoas detectadas: 0</div>
+  <div id="log"></div>
 
   <script>
-    // Selecionar o elemento de vídeo e o contador
+    // Selecionar os elementos de vídeo e contador
     const video = document.getElementById('video');
     const countDisplay = document.getElementById('count');
+    const logDisplay = document.getElementById('log');
     let totalPeopleDetected = 0;
+    let trackedPeople = [];
 
-    // Função para acessar a câmera frontal
+    // Função para acessar a câmera traseira
     async function setupCamera() {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' } // Câmera frontal
+        video: { facingMode: { exact: 'environment' } } // Câmera traseira
       });
       video.srcObject = stream;
       return new Promise((resolve) => {
@@ -44,6 +53,14 @@
           resolve(video);
         };
       });
+    }
+
+    // Função para exibir registro visual de detecção
+    function logDetection(message) {
+      logDisplay.textContent = message;
+      setTimeout(() => {
+        logDisplay.textContent = ''; // Limpar a mensagem após um tempo
+      }, 2000);
     }
 
     // Função principal de detecção de pessoas
@@ -54,9 +71,27 @@
       const detect = async () => {
         const predictions = await model.detect(video);
         let personCount = 0;
+
         predictions.forEach((prediction) => {
           if (prediction.class === 'person') {
-            personCount++;
+            const bbox = prediction.bbox; // Caixa delimitadora da pessoa detectada
+            const newPerson = {
+              x: bbox[0],
+              y: bbox[1],
+              width: bbox[2],
+              height: bbox[3]
+            };
+
+            // Verifica se a pessoa já está na lista de rastreados
+            const alreadyTracked = trackedPeople.some((person) => {
+              return Math.abs(person.x - newPerson.x) < 50 && Math.abs(person.y - newPerson.y) < 50;
+            });
+
+            if (!alreadyTracked) {
+              personCount++;
+              trackedPeople.push(newPerson); // Adiciona a pessoa rastreada
+              logDetection('Pessoa detectada e registrada!');
+            }
           }
         });
         
