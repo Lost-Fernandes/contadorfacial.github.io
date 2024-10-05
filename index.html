@@ -6,7 +6,6 @@
   <title>Contador de Pessoas</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body {
       text-align: center;
@@ -34,10 +33,10 @@
     const countDisplay = document.getElementById('count');
     let totalPeopleDetected = 0;
 
-    // Função para acessar a câmera traseira
+    // Função para acessar a câmera frontal
     async function setupCamera() {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { exact: 'environment' } } // Câmera traseira
+        video: { facingMode: 'user' } // Câmera frontal
       });
       video.srcObject = stream;
       return new Promise((resolve) => {
@@ -45,15 +44,6 @@
           resolve(video);
         };
       });
-    }
-
-    // Função para gerar o PDF
-    function generatePDF(count) {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      doc.text(`Relatório de Detecção`, 10, 10);
-      doc.text(`Total de pessoas detectadas: ${count}`, 10, 20);
-      doc.save('detecao_pessoas.pdf');
     }
 
     // Função principal de detecção de pessoas
@@ -74,12 +64,6 @@
         totalPeopleDetected += personCount;
         countDisplay.textContent = `Pessoas detectadas: ${totalPeopleDetected}`;
 
-        // Gerar PDF a cada 2 detecções
-        if (totalPeopleDetected >= 2) {
-          generatePDF(totalPeopleDetected);
-          totalPeopleDetected = 0; // Reiniciar a contagem após gerar o PDF
-        }
-
         requestAnimationFrame(detect);
       };
       detect();
@@ -92,3 +76,4 @@
   </script>
 </body>
 </html>
+
