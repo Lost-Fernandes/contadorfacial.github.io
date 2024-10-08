@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Contador de Pessoas Persistente</title>
+  <title>Contador de Pessoas</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
   <style>
@@ -26,6 +26,14 @@
       margin: 10px 0;
       font-weight: bold;
     }
+    #object-count {
+      font-size: 18px;
+      margin: 20px;
+      text-align: left;
+      padding: 10px;
+      border: 1px solid #000;
+      display: inline-block;
+    }
   </style>
 </head>
 <body>
@@ -33,17 +41,18 @@
   <video id="video" autoplay playsinline muted></video>
   <div id="count">Pessoas detectadas: 0</div>
   <div id="log"></div>
+  <div id="object-count">
+    <h3>Quantidade de pessoas detectadas:</h3>
+    <ul id="object-list"></ul>
+  </div>
 
   <script>
     const video = document.getElementById('video');
     const countDisplay = document.getElementById('count');
-    const logDisplay = document.getElementById('log');
-
+    const objectList = document.getElementById('object-list');
+    
     let totalPeopleDetected = 0;
     let trackedPeople = [];
-
-    // Persistência para manter pessoas por um tempo mesmo se não forem detectadas temporariamente
-    const persistenceThreshold = 5; // Número de frames antes de remover uma pessoa ausente
 
     // Função para acessar a câmera traseira
     async function setupCamera() {
@@ -58,12 +67,12 @@
       });
     }
 
-    // Função para exibir registro visual de detecção
-    function logDetection(message) {
-      logDisplay.textContent = message;
-      setTimeout(() => {
-        logDisplay.textContent = ''; // Limpar a mensagem após um tempo
-      }, 2000);
+    // Função para atualizar a lista de objetos detectados (apenas pessoas)
+    function updatePeopleCount() {
+      objectList.innerHTML = ''; // Limpa a lista
+      const listItem = document.createElement('li');
+      listItem.textContent = `Pessoas: ${totalPeopleDetected}`;
+      objectList.appendChild(listItem);
     }
 
     // Função principal de detecção de pessoas
@@ -75,57 +84,43 @@
         const predictions = await model.detect(video);
         let newTrackedPeople = [];
 
+        // Verifica todas as detecções e filtra apenas as pessoas
         predictions.forEach((prediction) => {
-          if (prediction.class === 'person') {
+          const className = prediction.class;
+
+          if (className === 'person') {
             const bbox = prediction.bbox; // Caixa delimitadora da pessoa detectada
             const newPerson = {
               x: bbox[0],
               y: bbox[1],
               width: bbox[2],
-              height: bbox[3],
-              persistence: persistenceThreshold // Atribuir persistência inicial
+              height: bbox[3]
             };
 
             // Verifica se a pessoa já está na lista de rastreados
-            const alreadyTracked = trackedPeople.some((person, index) => {
-              const distanceX = Math.abs(person.x - newPerson.x);
-              const distanceY = Math.abs(person.y - newPerson.y);
-
-              if (distanceX < 50 && distanceY < 50) {
-                // Atualiza a persistência da pessoa detectada
-                trackedPeople[index].persistence = persistenceThreshold;
-                return true;
-              }
-              return false;
+            const alreadyTracked = trackedPeople.some((person) => {
+              return Math.abs(person.x - newPerson.x) < 50 && Math.abs(person.y - newPerson.y) < 50;
             });
 
             if (!alreadyTracked) {
               newTrackedPeople.push(newPerson); // Adiciona a nova pessoa detectada
-              logDetection('Pessoa detectada e registrada!');
             }
           }
         });
 
-        // Atualizar a lista de pessoas rastreadas
-        trackedPeople.forEach((person, index) => {
-          // Reduz a persistência de cada pessoa
-          person.persistence--;
+        // Atualiza a lista de pessoas rastreadas
+        trackedPeople = [...newTrackedPeople];
 
-          // Remover pessoas que atingiram o limite de persistência
-          if (person.persistence > 0) {
-            newTrackedPeople.push(person);
-          }
-        });
-
-        trackedPeople = newTrackedPeople;
-
-        // Atualizar a contagem de pessoas
+        // Atualiza a contagem total de pessoas
         totalPeopleDetected = trackedPeople.length;
         countDisplay.textContent = `Pessoas detectadas: ${totalPeopleDetected}`;
 
+        // Atualiza a caixa com a contagem de pessoas
+        updatePeopleCount();
+
+        // Continuar a detecção
         requestAnimationFrame(detect);
       };
-
       detect();
     }
 
