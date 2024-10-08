@@ -33,6 +33,7 @@
       padding: 10px;
       border: 1px solid #000;
       display: inline-block;
+      min-width: 200px;
     }
   </style>
 </head>
@@ -43,7 +44,9 @@
   <div id="log"></div>
   <div id="object-count">
     <h3>Quantidade de pessoas detectadas:</h3>
-    <ul id="object-list"></ul>
+    <ul id="object-list">
+      <li>Pessoas: 0</li>
+    </ul>
   </div>
 
   <script>
@@ -67,7 +70,7 @@
       });
     }
 
-    // Função para atualizar a lista de objetos detectados (apenas pessoas)
+    // Função para atualizar a lista de contagem de pessoas
     function updatePeopleCount() {
       objectList.innerHTML = ''; // Limpa a lista
       const listItem = document.createElement('li');
@@ -86,9 +89,7 @@
 
         // Verifica todas as detecções e filtra apenas as pessoas
         predictions.forEach((prediction) => {
-          const className = prediction.class;
-
-          if (className === 'person') {
+          if (prediction.class === 'person') {
             const bbox = prediction.bbox; // Caixa delimitadora da pessoa detectada
             const newPerson = {
               x: bbox[0],
@@ -115,7 +116,7 @@
         totalPeopleDetected = trackedPeople.length;
         countDisplay.textContent = `Pessoas detectadas: ${totalPeopleDetected}`;
 
-        // Atualiza a caixa com a contagem de pessoas
+        // Atualiza a caixa com a contagem de pessoas e mantém o valor visível
         updatePeopleCount();
 
         // Continuar a detecção
