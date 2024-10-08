@@ -56,6 +56,7 @@
     
     let totalPeopleDetected = 0;
     let trackedPeople = [];
+    const detectionThreshold = 50; // Tolerância para considerar pessoas novas
 
     // Função para acessar a câmera traseira
     async function setupCamera() {
@@ -75,6 +76,13 @@
       const listItem = document.createElement('li');
       listItem.textContent = `Pessoas: ${totalPeopleDetected}`;
       objectList.appendChild(listItem);
+    }
+
+    // Função para verificar se uma pessoa já está rastreada
+    function isPersonNew(newPerson) {
+      return !trackedPeople.some((person) => {
+        return Math.abs(person.x - newPerson.x) < detectionThreshold && Math.abs(person.y - newPerson.y) < detectionThreshold;
+      });
     }
 
     // Função principal de detecção de pessoas
@@ -97,12 +105,8 @@
               height: bbox[3]
             };
 
-            // Verifica se a pessoa já está na lista de rastreados
-            const alreadyTracked = trackedPeople.some((person) => {
-              return Math.abs(person.x - newPerson.x) < 50 && Math.abs(person.y - newPerson.y) < 50;
-            });
-
-            if (!alreadyTracked) {
+            // Verifica se a pessoa é nova (não estava rastreada antes)
+            if (isPersonNew(newPerson)) {
               newTrackedPeople.push(newPerson); // Adiciona a nova pessoa detectada
               totalPeopleDetected++; // Incrementa a contagem total
               addPeopleCountToList(); // Adiciona o valor à lista
