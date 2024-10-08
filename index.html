@@ -35,14 +35,12 @@
   <div id="log"></div>
 
   <script>
-    // Selecionar os elementos de vídeo e contador
     const video = document.getElementById('video');
     const countDisplay = document.getElementById('count');
     const logDisplay = document.getElementById('log');
     let totalPeopleDetected = 0;
     let trackedPeople = [];
 
-    // Função para acessar a câmera traseira
     async function setupCamera() {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { exact: 'environment' } } // Câmera traseira
@@ -55,7 +53,6 @@
       });
     }
 
-    // Função para exibir registro visual de detecção
     function logDetection(message) {
       logDisplay.textContent = message;
       setTimeout(() => {
@@ -63,7 +60,6 @@
       }, 2000);
     }
 
-    // Função principal de detecção de pessoas
     async function detectPeople() {
       const model = await cocoSsd.load();
       console.log('Modelo carregado!');
@@ -71,6 +67,7 @@
       const detect = async () => {
         const predictions = await model.detect(video);
         let personCount = 0;
+        const newTrackedPeople = [];
 
         predictions.forEach((prediction) => {
           if (prediction.class === 'person') {
@@ -82,21 +79,26 @@
               height: bbox[3]
             };
 
-            // Verifica se a pessoa já está na lista de rastreados
             const alreadyTracked = trackedPeople.some((person) => {
               return Math.abs(person.x - newPerson.x) < 50 && Math.abs(person.y - newPerson.y) < 50;
             });
 
             if (!alreadyTracked) {
               personCount++;
-              trackedPeople.push(newPerson); // Adiciona a pessoa rastreada
+              newTrackedPeople.push(newPerson);
               logDetection('Pessoa detectada e registrada!');
             }
           }
         });
-        
-        // Atualizar a contagem na interface
-        totalPeopleDetected += personCount;
+
+        // Atualizar o array de pessoas rastreadas para nova detecção
+        trackedPeople = [...newTrackedPeople];
+
+        // Só atualizar a contagem se novas pessoas forem detectadas
+        if (personCount > 0) {
+          totalPeopleDetected += personCount;
+        }
+
         countDisplay.textContent = `Pessoas detectadas: ${totalPeopleDetected}`;
 
         requestAnimationFrame(detect);
@@ -104,11 +106,9 @@
       detect();
     }
 
-    // Inicializar o vídeo e o modelo
     setupCamera().then(() => {
       detectPeople();
     });
   </script>
 </body>
 </html>
-
