@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Contador de Pessoas e Outros Objetos</title>
+  <title>Contador de Pessoas Persistente</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
   <style>
@@ -26,36 +26,24 @@
       margin: 10px 0;
       font-weight: bold;
     }
-    #object-count {
-      font-size: 18px;
-      margin: 20px;
-      text-align: left;
-      padding: 10px;
-      border: 1px solid #000;
-      display: inline-block;
-    }
   </style>
 </head>
 <body>
-  <h1>Contador de Pessoas e Outros Objetos</h1>
+  <h1>Contador de Pessoas</h1>
   <video id="video" autoplay playsinline muted></video>
   <div id="count">Pessoas detectadas: 0</div>
   <div id="log"></div>
-  <div id="object-count">
-    <h3>Contagem de objetos detectados:</h3>
-    <ul id="object-list"></ul>
-  </div>
 
   <script>
     const video = document.getElementById('video');
     const countDisplay = document.getElementById('count');
     const logDisplay = document.getElementById('log');
-    const objectList = document.getElementById('object-list');
-    
+
     let totalPeopleDetected = 0;
-    let currentPeopleCount = 0;
     let trackedPeople = [];
-    let objectCounts = {};
+
+    // Persistência para manter pessoas por um tempo mesmo se não forem detectadas temporariamente
+    const persistenceThreshold = 5; // Número de frames antes de remover uma pessoa ausente
 
     // Função para acessar a câmera traseira
     async function setupCamera() {
@@ -78,49 +66,37 @@
       }, 2000);
     }
 
-    // Função para atualizar a lista de objetos detectados
-    function updateObjectCounts() {
-      objectList.innerHTML = '';
-      for (const [object, count] of Object.entries(objectCounts)) {
-        const listItem = document.createElement('li');
-        listItem.textContent = `${object}: ${count}`;
-        objectList.appendChild(listItem);
-      }
-    }
-
-    // Função principal de detecção de pessoas e objetos
-    async function detectPeopleAndObjects() {
+    // Função principal de detecção de pessoas
+    async function detectPeople() {
       const model = await cocoSsd.load();
       console.log('Modelo carregado!');
 
       const detect = async () => {
         const predictions = await model.detect(video);
         let newTrackedPeople = [];
-        objectCounts = {}; // Reinicia as contagens de objetos a cada detecção
 
-        // Verifica todas as detecções e categoriza
         predictions.forEach((prediction) => {
-          const className = prediction.class;
-
-          // Atualiza o número de objetos da classe
-          if (objectCounts[className]) {
-            objectCounts[className]++;
-          } else {
-            objectCounts[className] = 1;
-          }
-
-          if (className === 'person') {
+          if (prediction.class === 'person') {
             const bbox = prediction.bbox; // Caixa delimitadora da pessoa detectada
             const newPerson = {
               x: bbox[0],
               y: bbox[1],
               width: bbox[2],
-              height: bbox[3]
+              height: bbox[3],
+              persistence: persistenceThreshold // Atribuir persistência inicial
             };
 
             // Verifica se a pessoa já está na lista de rastreados
-            const alreadyTracked = trackedPeople.some((person) => {
-              return Math.abs(person.x - newPerson.x) < 50 && Math.abs(person.y - newPerson.y) < 50;
+            const alreadyTracked = trackedPeople.some((person, index) => {
+              const distanceX = Math.abs(person.x - newPerson.x);
+              const distanceY = Math.abs(person.y - newPerson.y);
+
+              if (distanceX < 50 && distanceY < 50) {
+                // Atualiza a persistência da pessoa detectada
+                trackedPeople[index].persistence = persistenceThreshold;
+                return true;
+              }
+              return false;
             });
 
             if (!alreadyTracked) {
@@ -130,29 +106,32 @@
           }
         });
 
-        // Atualiza a lista de pessoas rastreadas
-        trackedPeople = [...newTrackedPeople];
+        // Atualizar a lista de pessoas rastreadas
+        trackedPeople.forEach((person, index) => {
+          // Reduz a persistência de cada pessoa
+          person.persistence--;
 
-        // Atualizar a contagem de pessoas se houver mudanças
-        const newPeopleCount = trackedPeople.length;
-        if (newPeopleCount !== currentPeopleCount) {
-          totalPeopleDetected += newPeopleCount - currentPeopleCount;
-          currentPeopleCount = newPeopleCount;
-          countDisplay.textContent = `Pessoas detectadas: ${totalPeopleDetected}`;
-        }
+          // Remover pessoas que atingiram o limite de persistência
+          if (person.persistence > 0) {
+            newTrackedPeople.push(person);
+          }
+        });
 
-        // Atualiza a lista de contagem de objetos detectados
-        updateObjectCounts();
+        trackedPeople = newTrackedPeople;
 
-        // Continuar a detecção
+        // Atualizar a contagem de pessoas
+        totalPeopleDetected = trackedPeople.length;
+        countDisplay.textContent = `Pessoas detectadas: ${totalPeopleDetected}`;
+
         requestAnimationFrame(detect);
       };
+
       detect();
     }
 
     // Inicializar o vídeo e o modelo
     setupCamera().then(() => {
-      detectPeopleAndObjects();
+      detectPeople();
     });
   </script>
 </body>
