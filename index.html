@@ -43,9 +43,9 @@
   <div id="count">Pessoas detectadas: 0</div>
   <div id="log"></div>
   <div id="object-count">
-    <h3>Quantidade de pessoas detectadas:</h3>
+    <h3>Quantidade de pessoas captadas:</h3>
     <ul id="object-list">
-      <li>Pessoas: 0</li>
+      <!-- Aqui serão armazenados os valores captados -->
     </ul>
   </div>
 
@@ -70,9 +70,8 @@
       });
     }
 
-    // Função para atualizar a lista de contagem de pessoas
-    function updatePeopleCount() {
-      objectList.innerHTML = ''; // Limpa a lista
+    // Função para adicionar a contagem na caixa sem sobrescrever
+    function addPeopleCountToList() {
       const listItem = document.createElement('li');
       listItem.textContent = `Pessoas: ${totalPeopleDetected}`;
       objectList.appendChild(listItem);
@@ -105,6 +104,8 @@
 
             if (!alreadyTracked) {
               newTrackedPeople.push(newPerson); // Adiciona a nova pessoa detectada
+              totalPeopleDetected++; // Incrementa a contagem total
+              addPeopleCountToList(); // Adiciona o valor à lista
             }
           }
         });
@@ -112,12 +113,8 @@
         // Atualiza a lista de pessoas rastreadas
         trackedPeople = [...newTrackedPeople];
 
-        // Atualiza a contagem total de pessoas
-        totalPeopleDetected = trackedPeople.length;
+        // Atualiza a contagem de pessoas
         countDisplay.textContent = `Pessoas detectadas: ${totalPeopleDetected}`;
-
-        // Atualiza a caixa com a contagem de pessoas e mantém o valor visível
-        updatePeopleCount();
 
         // Continuar a detecção
         requestAnimationFrame(detect);
